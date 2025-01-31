@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Linode Instance Manager</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f9;
+        margin: 0;
+        padding: 20px;
+      }
+      h1,
+      h2 {
+        color: #333;
+      }
+      form {
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+      }
+      input,
+      select,
+      button {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 16px;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      .message {
+        padding: 10px;
+        margin-bottom: 15px;
+        border-radius: 4px;
+      }
+      .message.success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .message.error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .instances-list {
+        margin-top: 20px;
+      }
+      .instance-item {
+        background: #fff;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-bottom: 10px;
+      }
+      .instance-item h3 {
+        margin: 0;
+        font-size: 18px;
+      }
+      .instance-item p {
+        margin: 5px 0;
+      }
+      .ips-list {
+        margin-top: 20px;
+        background: #fff;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .ips-list h3 {
+        margin: 0 0 10px 0;
+        font-size: 18px;
+      }
+      .ips-list ul {
+        margin: 0;
+        padding: 0;
+        list-style-type: none;
+      }
+      .ips-list ul li {
+        padding: 5px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Linode Instance Manager - by fireRanu</h1>
+    <h2>
+      Telegram - <a href="https://t.me/fireRanu" target="_blank">Contact</a>
+    </h2>
+    {% with messages = get_flashed_messages(with_categories=true) %} {% if
+    messages %} {% for category, message in messages %}
+    <div class="message {{ category }}">{{ message }}</div>
+    {% endfor %} {% endif %} {% endwith %}
+
+    <h2>Enter Your Key</h2>
+    <form action="{{ url_for('validate_key') }}" method="post">
+      <label for="user_key">Your Key:</label>
+      <input type="text" id="user_key" name="user_key" required />
+      <button type="submit">Submit Key</button>
+    </form>
+
+    {% if 'user_key' in session %}
+    <form action="{{ url_for('logout') }}" method="post">
+      <button type="submit">Log Out</button>
+    </form>
+    {% endif %}
+
+    <h2>Add API Token</h2>
+    <form action="{{ url_for('add_token') }}" method="post">
+      <label for="account_name">Account Name:</label>
+      <input type="text" id="account_name" name="account_name" required />
+      <label for="token">API Token:</label>
+      <input type="text" id="token" name="token" required />
+      <button type="submit">Add Token</button>
+    </form>
+
+    <h2>Manage Your Tokens</h2>
+    <a href="{{ url_for('view_tokens') }}">View, Edit, or Delete Your Tokens</a>
+
+    <!-- Add this somewhere in your index.html file -->
+    <h2>Instance Creation Limit</h2>
+    <p>Total Limit: {{ total_limit }}</p>
+    <p>Available Limit: {{ available_limit }}</p>
+
+    <h2>Create Instances</h2>
+    <form action="{{ url_for('create_instances') }}" method="post">
+      <label for="token">Select Token:</label>
+      <select id="token" name="token" required>
+        <option value="" disabled selected>Select a token</option>
+        {% for account, token in tokens.items() %}
+        <option value="{{ token }}">{{ account }} - {{ token }}</option>
+        {% endfor %}
+      </select>
+      <label for="num_instances">Number of Instances:</label>
+      <input type="number" id="num_instances" name="num_instances" required />
+      <label for="image">Image:</label>
+      <select id="image" name="image" required>
+        <option value="linode/debian11">Debian 11</option>
+        <option value="linode/debian12">Debian 12</option>
+        <option value="linode/ubuntu20.04">Ubuntu 20.04</option>
+        <option value="linode/ubuntu22.04">Ubuntu 22.04</option>
+        <option value="linode/ubuntu24.04">Ubuntu 24.04</option>
+      </select>
+      <label for="region">Region:</label>
+      <select id="region" name="region" required>
+        <option value="in-maa">Chennai</option>
+        <option value="in-bom-2">Mumbai 2</option>
+      </select>
+      <label for="instance_type">Instance Type:</label>
+      <select id="instance_type" name="instance_type" required>
+        <option value="g6-dedicated-2">Dedicated 4gb 2 CPU</option>
+        <option value="g6-dedicated-4">Dedicated 8gb 4 CPU</option>
+        <option value="g6-dedicated-8">Dedicated 16gb 8 CPU</option>
+        <option value="g6-nanode-1">Shared 1gb 1 CPU</option>
+        <option value="g6-standard-1">Shared 2gb 1 CPU</option>
+        <option value="g6-standard-2">Shared 4gb 2 CPU</option>
+        <option value="g6-standard-4">Shared 8gb 4 CPU</option>
+        <option value="g6-standard-6">Shared 16gb 6 CPU</option>
+        <option value="g7-premium-2">Premium 4gb 2 CPU</option>
+        <option value="g7-premium-4">Premium 8gb 4 CPU</option>
+        <option value="g7-premium-8">Premium 16gb 8 CPU</option>
+      </select>
+      <label for="root_password">Root Password:</label>
+      <input type="password" id="root_password" name="root_password" required />
+      <button type="submit">Create Instances</button>
+    </form>
+
+    <h2>Delete Instances</h2>
+    <form action="{{ url_for('delete_instances') }}" method="post">
+      <label for="token">Select Token:</label>
+      <select
+        id="token"
+        name="token"
+        required
+        onchange="fetchInstances(this.value)"
+      >
+        <option value="" disabled selected>Select a token</option>
+        {% for account, token in tokens.items() %}
+        <option value="{{ token }}">{{ account }}</option>
+        {% endfor %}
+      </select>
+      <div id="instances-list" class="instances-list">
+        <!-- Instances will be dynamically loaded here -->
+      </div>
+      <input type="hidden" id="selected_token" name="token" value="" />
+      <button type="submit">Delete Selected Instances</button>
+    </form>
+
+    <h2>Show All Instances' IPs</h2>
+    <form id="show-ips-form">
+      <label for="ips-token">Select Token:</label>
+      <select id="ips-token" name="ips-token" required>
+        <option value="" disabled selected>Select a token</option>
+        {% for account, token in tokens.items() %}
+        <option value="{{ token }}">{{ account }}</option>
+        {% endfor %}
+      </select>
+      <button type="button" onclick="fetchAllIPs()">Show All IPs</button>
+    </form>
+    <div id="all-ips-list" class="ips-list">
+      <!-- IPs will be dynamically loaded here -->
+    </div>
+
+    <script>
+      async function fetchInstances(token) {
+        const response = await fetch(
+          `/get_instances?token=${encodeURIComponent(token)}`
+        );
+        const instances = await response.json();
+        const instancesList = document.getElementById("instances-list");
+        instancesList.innerHTML = "";
+
+        if (instances.length === 0) {
+          instancesList.innerHTML = "<p>No instances found.</p>";
+          return;
+        }
+
+        // Add "Select All" checkbox
+        const selectAllDiv = document.createElement("div");
+        selectAllDiv.className = "select-all";
+        selectAllDiv.innerHTML = `
+        <label>
+            <input type="checkbox" id="select-all"> Select All
+        </label>
+    `;
+        instancesList.appendChild(selectAllDiv);
+
+        // Add individual instance checkboxes
+        instances.forEach((instance, index) => {
+          const instanceDiv = document.createElement("div");
+          instanceDiv.className = "instance-item";
+          instanceDiv.innerHTML = `
+            <label>
+                <input type="checkbox" name="instance_ids" value="${
+                  instance.id
+                }" class="instance-checkbox">
+                <strong>ID:</strong> ${instance.id} | <strong>Label:</strong> ${
+            instance.label
+          } | <strong>IPv4:</strong> ${instance.ipv4.join(", ")}
+            </label>
+        `;
+          instancesList.appendChild(instanceDiv);
+        });
+
+        // Add event listener for "Select All"
+        document
+          .getElementById("select-all")
+          .addEventListener("change", function () {
+            const checkboxes = document.querySelectorAll(".instance-checkbox");
+            checkboxes.forEach((checkbox) => {
+              checkbox.checked = this.checked;
+            });
+          });
+      }
+
+      async function fetchAllIPs() {
+        const token = document.getElementById("ips-token").value; // Use the new token dropdown
+        if (!token) {
+          alert("Please select a token first.");
+          return;
+        }
+
+        const response = await fetch(
+          `/get_instances?token=${encodeURIComponent(token)}`
+        );
+        const instances = await response.json();
+        const ipsList = document.getElementById("all-ips-list");
+        ipsList.innerHTML = "";
+
+        if (instances.length === 0) {
+          ipsList.innerHTML = "<p>No instances found.</p>";
+          return;
+        }
+
+        const ips = instances.flatMap((instance) => instance.ipv4);
+        const ipsDiv = document.createElement("div");
+        ipsDiv.innerHTML = `
+        <h3>All IPs</h3>
+        <ul>
+            ${ips.map((ip) => `<li>${ip}</li>`).join("")}
+        </ul>
+    `;
+        ipsList.appendChild(ipsDiv);
+      }
+
+      document.getElementById("token").addEventListener("change", function () {
+        document.getElementById("selected_token").value = this.value;
+      });
+    </script>
+  </body>
+</html>

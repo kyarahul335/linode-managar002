@@ -1,0 +1,12 @@
+{
+    "SameerKey": {
+        "total_limit": 10,
+        "available_limit": 10,
+        "tokens": [
+            {
+                "account_name": "sameer",
+                "token": "783f5a6173fd1344152c77e59ead8efe2f46d3f7340fdbf57d02e525271d065a"
+            }
+        ]
+    }
+}

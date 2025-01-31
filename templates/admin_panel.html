@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Panel</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f9;
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      h1 {
+        color: #333;
+        margin-bottom: 20px;
+      }
+      .form-container {
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+        color: #555;
+      }
+      input,
+      select,
+      button {
+        /* width: 100%; */
+        padding: 10px;
+        margin-bottom: 15px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 16px;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      .message {
+        padding: 10px;
+        margin-bottom: 15px;
+        border-radius: 4px;
+      }
+      .message.success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .message.error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .keys-list {
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+      }
+      table,
+      th,
+      td {
+        border: 1px solid #ddd;
+      }
+      th,
+      td {
+        padding: 10px;
+        text-align: left;
+      }
+      th {
+        background-color: #f4f4f9;
+      }
+      .token-actions {
+        white-space: nowrap;
+      }
+      .token-actions button {
+        margin-right: 5px;
+      }
+      .logout-button {
+        text-align: center;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Admin Panel</h1>
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %} {% for category, message in messages %}
+      <div class="message {{ category }}">{{ message }}</div>
+      {% endfor %} {% endif %} {% endwith %}
+      <div class="form-container">
+        <form action="{{ url_for('admin_panel') }}" method="post">
+          <label for="user_key">Add Manual Key:</label>
+          <input
+            type="text"
+            id="user_key"
+            name="user_key"
+            placeholder="Enter a key"
+          />
+          <button type="submit" name="add_key">Add Key</button>
+          <button type="submit" name="generate_key">Generate Random Key</button>
+        </form>
+      </div>
+
+      <div class="keys-list">
+        <h2>Existing Keys and Linked Tokens</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Key</th>
+              <th>Account Name</th>
+              <th>Token</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for pair in key_token_pairs %}
+            <tr>
+              <td>{{ pair.key }}</td>
+              <td colspan="2">
+                {% if pair.tokens %}
+                <ul>
+                  {% for token in pair.tokens %}
+                  <li>
+                    {{ token.account_name }} - {{ token.token }}
+                    <div class="token-actions">
+                      <form
+                        action="{{ url_for('admin_edit_token', key=pair.key, token_index=loop.index0) }}"
+                        method="get"
+                        style="display: inline"
+                      >
+                        <button type="submit">Edit</button>
+                      </form>
+                      <form
+                        action="{{ url_for('admin_remove_token', key=pair.key, token_index=loop.index0) }}"
+                        method="post"
+                        style="display: inline"
+                      >
+                        <button type="submit">Remove</button>
+                      </form>
+                    </div>
+                  </li>
+                  {% endfor %}
+                </ul>
+                {% else %} No tokens added. {% endif %}
+              </td>
+              <td>
+                <form
+                  action="{{ url_for('admin_delete_key', key=pair.key) }}"
+                  method="post"
+                  style="display: inline"
+                >
+                  <button type="submit">Delete Key</button>
+                </form>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="4">
+                <form
+                  action="{{ url_for('admin_add_token', key=pair.key) }}"
+                  method="post"
+                >
+                  <label for="account_name">Account Name:</label>
+                  <input
+                    type="text"
+                    id="account_name"
+                    name="account_name"
+                    required
+                  />
+                  <label for="token">Token:</label>
+                  <input type="text" id="token" name="token" required />
+                  <button type="submit">Add Token</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Add this somewhere in your admin_panel.html file -->
+      <!-- Add this somewhere in your admin_panel.html file -->
+      <h2>Update Limit</h2>
+      <form action="{{ url_for('admin_panel') }}" method="post">
+        <label for="key_to_update">Select Key:</label>
+        <select id="key_to_update" name="key_to_update" required>
+          <option value="" disabled selected>Select a key</option>
+          {% for pair in key_token_pairs %}
+          <option value="{{ pair.key }}">{{ pair.key }}</option>
+          {% endfor %}
+        </select>
+        <label for="new_limit">New Limit:</label>
+        <input type="number" id="new_limit" name="new_limit" required />
+        <button type="submit" name="update_limit">Update Limit</button>
+      </form>
+
+      <!-- Add this inside the table in admin_panel.html -->
+      <table>
+        <thead>
+          <tr>
+            <th>Key</th>
+            <th>Total Limit</th>
+            <th>Available Limit</th>
+            <th>Tokens</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pair in key_token_pairs %}
+          <tr>
+            <td>{{ pair.key }}</td>
+            <td>{{ pair.total_limit }}</td>
+            <td>{{ pair.available_limit }}</td>
+            <td>
+              {% if pair.tokens %}
+              <ul>
+                {% for token in pair.tokens %}
+                <li>{{ token.account_name }} - {{ token.token }}</li>
+                {% endfor %}
+              </ul>
+              {% else %} No tokens added. {% endif %}
+            </td>
+            <td>
+              <form
+                action="{{ url_for('admin_panel') }}"
+                method="post"
+                style="display: inline"
+              >
+                <input
+                  type="hidden"
+                  name="key_to_delete"
+                  value="{{ pair.key }}"
+                />
+                <button type="submit" name="delete_key">Delete Key</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <!-- Add this inside the table in admin_panel.html -->
+      <table>
+        <thead>
+          <tr>
+            <th>Key</th>
+            <th>Total Limit</th>
+            <th>Available Limit</th>
+            <th>Tokens</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pair in key_token_pairs %}
+          <tr>
+            <td>{{ pair.key }}</td>
+            <td>{{ pair.total_limit }}</td>
+            <td>{{ pair.available_limit }}</td>
+            <td>
+              {% if pair.tokens %}
+              <ul>
+                {% for token in pair.tokens %}
+                <li>{{ token.account_name }} - {{ token.token }}</li>
+                {% endfor %}
+              </ul>
+              {% else %} No tokens added. {% endif %}
+            </td>
+            <td>
+              <form
+                action="{{ url_for('admin_panel') }}"
+                method="post"
+                style="display: inline"
+              >
+                <input
+                  type="hidden"
+                  name="key_to_update"
+                  value="{{ pair.key }}"
+                />
+                <input
+                  type="number"
+                  name="new_limit"
+                  placeholder="Add Limit"
+                  required
+                />
+                <button type="submit" name="update_limit">Update Limit</button>
+              </form>
+              <form
+                action="{{ url_for('admin_panel') }}"
+                method="post"
+                style="display: inline"
+              >
+                <input
+                  type="hidden"
+                  name="key_to_delete"
+                  value="{{ pair.key }}"
+                />
+                <button type="submit" name="delete_key">Delete Key</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div class="logout-button">
+        <form action="{{ url_for('admin_logout') }}" method="post">
+          <button type="submit">Log Out</button>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>
